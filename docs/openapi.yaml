@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: DreamOpps Intelligence API
+  version: 0.1.0
+  description: REST API for opportunity discovery, student accounts, matching, applications, and admin source review.
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /health:
+    get:
+      summary: Health and database readiness
+      responses:
+        '200': { description: API available }
+        '503': { description: Database unavailable }
+  /auth/register:
+    post:
+      summary: Register a student and establish a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 100 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12, maxLength: 128 }
+      responses:
+        '201': { description: Account created }
+        '400': { description: Invalid input }
+        '409': { description: Email already registered }
+  /auth/login:
+    post:
+      summary: Establish a server-managed session
+      responses:
+        '200': { description: Authenticated }
+        '401': { description: Invalid credentials }
+  /auth/logout:
+    post:
+      security: [{ sessionCookie: [] }]
+      responses:
+        '204': { description: Session destroyed }
+        '401': { description: Sign in required }
+  /opportunities:
+    get:
+      summary: Search published opportunities
+      parameters:
+        - { in: query, name: q, schema: { type: string } }
+        - { in: query, name: category, schema: { type: string } }
+        - { in: query, name: country, schema: { type: string } }
+        - { in: query, name: format, schema: { type: string, enum: [REMOTE, HYBRID, IN_PERSON] } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 50, default: 12 } }
+      responses:
+        '200': { description: Paginated opportunity results }
+  /profile:
+    get:
+      security: [{ sessionCookie: [] }]
+      responses: { '200': { description: Current student's profile } }
+    put:
+      security: [{ sessionCookie: [] }]
+      responses: { '200': { description: Updated profile } }
+  /recommendations:
+    get:
+      security: [{ sessionCookie: [] }]
+      responses: { '200': { description: Ranked opportunities with matching explanations } }
+  /admin/opportunities:
+    post:
+      security: [{ sessionCookie: [] }]
+      summary: Create an unpublished opportunity draft (admin only)
+      responses:
+        '201': { description: Draft created }
+        '403': { description: Admin role required }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dreamopps.sid

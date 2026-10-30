@@ -1,0 +1,45 @@
+name: DreamOpps CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dreamopps
+          POSTGRES_PASSWORD: dreamopps
+          POSTGRES_DB: dreamopps_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dreamopps -d dreamopps_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dreamopps:dreamopps@localhost:5432/dreamopps_test?schema=public
+      SESSION_SECRET: test-only-secret-for-ci-with-32-characters
+      WEB_ORIGIN: http://localhost:5173
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run db:deploy
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

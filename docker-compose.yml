@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dreamopps
+      POSTGRES_PASSWORD: dreamopps
+      POSTGRES_DB: dreamopps
+    ports:
+      - "5432:5432"
+    volumes:
+      - dreamopps-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dreamopps -d dreamopps"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  dreamopps-db:
